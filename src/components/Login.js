@@ -1,42 +1,34 @@
-import auth from "../utils/Auth";
 import EnterForm from "./EnterForm";
 import React from "react";
-import { useHistory } from "react-router-dom";
+import InfoTooltip from "./InfoTooltip";
 
-function Login({setLoggedIn}) {
+function Login({ onLogin, status, isInfoOpen, onClosePopup}) {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const history = useHistory();
 
-  function handleLoginSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    auth
-      .getLogIn(email, password)
-      .then((data) => {
-        localStorage.setItem("jwt", data.token);
-        const jwt = localStorage.getItem("jwt");
-        auth.checkToken(jwt).then((res) => {
-          if (res) {
-            setEmail(res.data.email);
-            setLoggedIn(true);
-          }
-        }).then(()=>history.push('/'));
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    onLogin(email, password);
   }
 
   return (
-    <EnterForm
-      email={email}
-      password={password}
-      setEmail={setEmail}
-      setPassword={setPassword}
-      title={"Вход"}
-      buttonName={"Войти"}
-      onSubmit={handleLoginSubmit}
-    />
+    <>
+      <EnterForm
+        email={email}
+        password={password}
+        setEmail={setEmail}
+        setPassword={setPassword}
+        title={"Вход"}
+        buttonName={"Войти"}
+        onSubmit={handleSubmit}
+      />
+      <InfoTooltip
+        isOpen={isInfoOpen}
+        onClose={onClosePopup}
+        status={status}
+        confirmText={"Вы успешно вошли!"}
+      />
+    </>
   );
 }
 

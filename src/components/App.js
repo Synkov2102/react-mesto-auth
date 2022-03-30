@@ -12,16 +12,17 @@ import auth from "../utils/Auth.js";
 
 import React from "react";
 import { CurrentUserContext } from "../contexts/CurrentUserContext";
-import { Route, useHistory } from "react-router-dom";
+import { Route, Link, useHistory } from "react-router-dom";
 import AddPlacePopup from "./AddPlacePopup";
 import Login from "./Login";
 import Register from "./Register";
 
 function App() {
   const history = useHistory();
-  const [path, setPath] = React.useState(history.location.pathname);
   const [email, setEmail] = React.useState("");
   const [loggedIn, setLoggedIn] = React.useState(true);
+  const [status, setStatus] = React.useState(false);
+  const [isInfoTooltipOpen, setIsInfoTooltipOpen] = React.useState(false);
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] =
     React.useState(false);
   const [isAddPlacePopupOpen, setIsAddPlacePopupOpen] = React.useState(false);
@@ -32,7 +33,8 @@ function App() {
   const [cards, setCards] = React.useState([]);
 
   React.useEffect(() => {
-    api
+    if (loggedIn){
+      api
       .getProfileInfo()
       .then((data) => {
         setCurrentUser(data);
@@ -49,12 +51,13 @@ function App() {
       .catch((err) => {
         console.log(err);
       });
-    tokenCheck();
+    }
+    tokenCheck()
   }, []);
 
   React.useEffect(() => {
     tokenCheck();
-  });
+  },[history.location]);
 
   function tokenCheck() {
     // если у пользователя есть токен в localStorage,
@@ -67,7 +70,10 @@ function App() {
           setEmail(res.data.email);
           setLoggedIn(true);
         }
-      });
+      })
+      .catch((err) => {
+        console.log(err);
+      });;
     } else {
       setLoggedIn(false);
     }
@@ -90,6 +96,7 @@ function App() {
     setIsEditProfilePopupOpen(false);
     setIsAddPlacePopupOpen(false);
     setSelectedCard(false);
+    setIsInfoTooltipOpen(false);
   }
 
   function handleCardClick(card) {
@@ -171,9 +178,57 @@ function App() {
   }
 
   function handleLogOut() {
-    localStorage.removeItem("jwt");
+    localStorage.clear();
     setLoggedIn(false);
     history.push("./sign-in");
+  }
+
+  function handleLogin(email, password) {
+    auth
+      .getLogIn(email, password)
+      .then((data) => {
+        localStorage.setItem("jwt", data.token);
+        setStatus(true);
+        setIsInfoTooltipOpen(true);
+        const jwt = localStorage.getItem("jwt");
+        auth
+          .checkToken(jwt)
+          .then((res) => {
+            if (res) {
+              setEmail(res.data.email);
+              setLoggedIn(true);
+              setTimeout(() => {
+                history.push("/");
+                closeAllPopups()
+              }, 1500)
+            }
+          })
+      })
+      .catch((err) => {
+        setStatus(false);
+        setIsInfoTooltipOpen(true);
+        console.log(err);
+      });
+  }
+
+  function handleRegister(email, password) {
+    auth
+      .getRegister(email, password)
+      .then(() => {
+        setStatus(true);
+      })
+      .catch((err) => {
+        setStatus(false);
+        console.log(err);
+      })
+      .finally(() => {
+        setIsInfoTooltipOpen(true);
+        setTimeout(() => {
+          history.push("/sign-in");
+          closeAllPopups()
+        }, 1500);
+        
+      });
   }
 
   return (
@@ -208,22 +263,32 @@ function App() {
         <Route path="/sign-in">
           <Header
             child={
-              <a href="./sign-up" className="header__link">
+              <Link to="./sign-up" className="header__link">
                 Регистрация
-              </a>
+              </Link>
             }
           />
-          <Login setLoggedIn={setLoggedIn}/>
+          <Login
+            onLogin={handleLogin}
+            status={status}
+            isInfoOpen={isInfoTooltipOpen}
+            onClosePopup={closeAllPopups}
+          />
         </Route>
         <Route path="/sign-up">
           <Header
             child={
-              <a href="./sign-in" className="header__link">
+              <Link to="./sign-in" className="header__link">
                 Войти
-              </a>
+              </Link>
             }
           />
-          <Register/>
+          <Register
+            onRegister={handleRegister}
+            status={status}
+            isInfoOpen={isInfoTooltipOpen}
+            closeAllPopups={closeAllPopups}
+          />
         </Route>
         <Footer />
         <ImagePopup card={selectedCard} onClose={closeAllPopups} />

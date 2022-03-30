@@ -12,7 +12,7 @@ function InfoTooltip (props){
                         alt='Изображение кнопки "выйти"'/>
                     </button>
                     <img className="popup__status-img" src={props.status ? confirmImgPath : rejectImgPath} alt="Изображение статуса отправки формы" />
-                    <p className="popup__text">{props.status ? "Вы успешно зарегистрировались!" : "Что-то пошло не так! Попробуйте еще раз."}</p>
+                    <p className="popup__text">{props.status ? props.confirmText : "Что-то пошло не так! Попробуйте еще раз."}</p>
                 </form>
             </div>
         </div>
